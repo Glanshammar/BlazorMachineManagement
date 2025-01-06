@@ -100,7 +100,6 @@ public class MachinesController : ControllerBase
             // Update machine properties
             machine.LastDataSent = DateTime.UtcNow;
             machine.Temperature = dataUpdate.Temperature;
-            machine.Pressure = dataUpdate.Pressure;
             machine.ProductionRate = dataUpdate.ProductionRate;
 
             // Optionally update the machine status based on the data
