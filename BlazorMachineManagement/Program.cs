@@ -24,6 +24,7 @@ public class Program
         builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
         builder.Services.AddLogging();
         builder.Services.AddScoped<MachineService>();
+        builder.Services.AddHttpClient();
 
         builder.Services.AddAuthentication(options =>
             {
