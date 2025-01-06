@@ -1,0 +1,149 @@
+﻿@page "/machines"
+@inject HttpClient Http
+@inject ILogger<MachineList> Logger
+
+<h1>Machine Management</h1>
+
+<button class="btn btn-success mb-3" @onclick="() => ShowMachineForm(null)">Add New Machine</button>
+
+@if (showForm)
+{
+        <MachineForm 
+            machine="@currentMachine" 
+            IsNewMachine="@(currentMachine.Id == Guid.Empty)"
+            OnCancel="CancelForm"
+            OnSave="SaveForm" />
+}
+
+@if (machines == null)
+{
+        <p><em>No machines avaible.</em></p>
+}
+else
+{
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Temperature</th>
+                    <th>Production Rate</th>
+                    <th>Max Temperature</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var machine in machines)
+            {
+                        <tr>
+                            <td>@machine.Name</td>
+                            <td>@(machine.IsOnline ? "Online" : "Offline")</td>
+                            <td>@machine.Temperature</td>
+                            <td>@machine.ProductionRate</td>
+                            <td>@machine.MaxTemperature</td>
+                            <td>
+                                <button class="btn btn-primary" @onclick="() => ToggleMachineStatus(machine)">
+                            @(machine.IsOnline ? "Stop" : "Start")
+                                </button>
+                                <button class="btn btn-info" @onclick="() => UpdateMachineData(machine)">Update Data</button>
+                                <button class="btn btn-warning" @onclick="() => ShowMachineForm(machine)">Edit</button>
+                                <button class="btn btn-danger" @onclick="() => DeleteMachine(machine)">Delete</button>
+                            </td>
+                        </tr>
+            }
+            </tbody>
+        </table>
+}
+
+@code {
+    private List<Machine> machines;
+    private bool showForm = false;
+    private Machine currentMachine = new Machine();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMachines();
+    }
+
+    private async Task LoadMachines()
+    {
+        try
+        {
+            machines = await Http.GetFromJsonAsync<List<Machine>>("api/Machines");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error fetching machines");
+        }
+    }
+
+    private void ShowMachineForm(Machine machine)
+    {
+        currentMachine = machine ?? new Machine();
+        showForm = true;
+    }
+
+    private async Task CancelForm()
+    {
+        showForm = false;
+        await LoadMachines();
+    }
+
+    private async Task SaveForm()
+    {
+        showForm = false;
+        await LoadMachines();
+    }
+
+    private async Task ToggleMachineStatus(Machine machine)
+    {
+        try
+        {
+            var endpoint = machine.IsOnline ? $"api/Machines/{machine.Id}/stop" : $"api/Machines/{machine.Id}/start";
+            var response = await Http.PatchAsync(endpoint, null);
+            response.EnsureSuccessStatusCode();
+            machine.IsOnline = !machine.IsOnline;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, $"Error toggling status for machine {machine.Id}");
+        }
+    }
+
+    private async Task UpdateMachineData(Machine machine)
+    {
+        var random = new Random();
+        var data = new MachineDataDto
+            {
+                Temperature = random.Next(0, 100),
+                ProductionRate = random.Next(0, 1000),
+                IsOnline = machine.IsOnline,
+                Name = machine.Name
+            };
+
+        try
+        {
+            var response = await Http.PatchAsJsonAsync($"api/Machines/{machine.Id}/updateData", data);
+            response.EnsureSuccessStatusCode();
+            await LoadMachines();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, $"Error updating data for machine {machine.Id}");
+        }
+    }
+
+    private async Task DeleteMachine(Machine machine)
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"api/Machines/{machine.Id}");
+            response.EnsureSuccessStatusCode();
+            await LoadMachines();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, $"Error deleting machine {machine.Id}");
+        }
+    }
+}
