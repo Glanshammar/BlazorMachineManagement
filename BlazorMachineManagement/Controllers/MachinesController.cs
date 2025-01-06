@@ -93,7 +93,7 @@ public class MachinesController : ControllerBase
             var machine = await _context.Machine.FindAsync(id);
             if (machine == null)
             {
-                _logger.LogWarning($"Machine with ID {id} not found for data update.");
+                _logger.LogWarning("Machine with ID {MachineId} not found for data update.", id);
                 return NotFound($"Machine with ID {id} not found.");
             }
 
@@ -109,18 +109,18 @@ public class MachinesController : ControllerBase
             // Add any custom logic here
             if (dataUpdate.Temperature > machine.MaxTemperature)
             {
-                _logger.LogWarning($"Machine {id} temperature exceeds maximum: {dataUpdate.Temperature}");
+                _logger.LogWarning("Machine {MachineId} temperature exceeds maximum: {Temperature}", id, dataUpdate.Temperature);
                 machine.IsOnline = false;
             }
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Data updated for machine {id}");
+            _logger.LogInformation("Data updated for machine {MachineId}", id);
             return Ok(new { message = "Machine data updated successfully", machine = machine });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error updating data for machine {id}");
+            _logger.LogError(ex, "Error updating data for machine {MachineId}", id);
             return StatusCode(500, "An error occurred while updating the machine data.");
         }
     }
