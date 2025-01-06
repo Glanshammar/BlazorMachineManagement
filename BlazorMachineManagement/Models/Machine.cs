@@ -6,4 +6,8 @@ public class Machine
     public string Name { get; set; }
     public bool IsOnline { get; set; }
     public DateTime LastDataSent { get; set; }
+    public double Temperature { get; set; }
+    public double Pressure { get; set; }
+    public int ProductionRate { get; set; }
+    public double MaxTemperature { get; set; }
 }
