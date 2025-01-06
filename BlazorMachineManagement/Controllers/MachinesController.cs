@@ -24,6 +24,11 @@ public class MachinesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Machine>>> GetMachine()
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        
         return await _context.Machine.ToListAsync();
     }
 
@@ -31,6 +36,11 @@ public class MachinesController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<Machine>> GetMachine(Guid id)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        
         var machine = await _context.Machine.FindAsync(id);
 
         if (machine == null)
@@ -44,6 +54,11 @@ public class MachinesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Machine>>> GetMachines()
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        
         return await _context.Machine
             .Select(m => new Machine
             {
@@ -58,6 +73,11 @@ public class MachinesController : ControllerBase
     [HttpPatch("{id}/start")]
     public async Task<IActionResult> StartMachine(Guid id)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        
         var machine = await _context.Machine.FindAsync(id);
         if (machine == null)
         {
@@ -73,6 +93,11 @@ public class MachinesController : ControllerBase
     [HttpPatch("{id}/stop")]
     public async Task<IActionResult> StopMachine(Guid id)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        
         var machine = await _context.Machine.FindAsync(id);
         if (machine == null)
         {
@@ -88,6 +113,11 @@ public class MachinesController : ControllerBase
     [HttpPatch("{id}/updateData")]
     public async Task<IActionResult> UpdateMachineData(Guid id, [FromBody] MachineDataDto dataUpdate)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        
         try
         {
             var machine = await _context.Machine.FindAsync(id);
@@ -128,6 +158,11 @@ public class MachinesController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> PutMachine(Guid id, Machine machine)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        
         if (id != machine.Id)
         {
             return BadRequest();
@@ -159,6 +194,11 @@ public class MachinesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Machine>> PostMachine(Machine machine)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        
         machine.Id = Guid.NewGuid();
         machine.IsOnline = false;
         machine.LastDataSent = DateTime.UtcNow;
@@ -173,6 +213,11 @@ public class MachinesController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteMachine(Guid id)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        
         var machine = await _context.Machine.FindAsync(id);
         if (machine == null)
         {
