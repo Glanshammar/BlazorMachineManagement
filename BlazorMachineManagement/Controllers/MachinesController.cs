@@ -12,9 +12,9 @@ namespace BlazorMachineManagement.Controllers;
 public class MachinesController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<BlazorMachineManagement.Models.Machine> _logger;
+    private readonly ILogger<MachinesController> _logger;
 
-    public MachinesController(ApplicationDbContext context, ILogger<BlazorMachineManagement.Models.Machine> logger)
+    public MachinesController(ApplicationDbContext context, ILogger<MachinesController> logger)
     {
         _context = context;
         _logger = logger;
