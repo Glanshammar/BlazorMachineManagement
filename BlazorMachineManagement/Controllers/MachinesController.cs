@@ -161,6 +161,10 @@ public class MachinesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Machine>> PostMachine(Machine machine)
     {
+        machine.Id = Guid.NewGuid();
+        machine.IsOnline = false;
+        machine.LastDataSent = DateTime.UtcNow;
+
         _context.Machine.Add(machine);
         await _context.SaveChangesAsync();
 
