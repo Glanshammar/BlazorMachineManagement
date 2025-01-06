@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BlazorMachineManagement.Data;
 using BlazorMachineManagement.Models;
+using BlazorMachineManagement.DTO;
+using Microsoft.Extensions.Logging;
 
 namespace BlazorMachineManagement.Controllers;
 
@@ -10,10 +12,12 @@ namespace BlazorMachineManagement.Controllers;
 public class MachinesController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly ILogger<BlazorMachineManagement.Models.Machine> _logger;
 
-    public MachinesController(ApplicationDbContext context)
+    public MachinesController(ApplicationDbContext context, ILogger<BlazorMachineManagement.Models.Machine> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     // GET: api/Machines
@@ -35,6 +39,90 @@ public class MachinesController : ControllerBase
         }
 
         return machine;
+    }
+    
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Machine>>> GetMachines()
+    {
+        return await _context.Machine
+            .Select(m => new Machine
+            {
+                Id = m.Id,
+                Name = m.Name,
+                IsOnline = m.IsOnline,
+                LastDataSent = m.LastDataSent
+            })
+            .ToListAsync();
+    }
+    
+    [HttpPatch("{id}/start")]
+    public async Task<IActionResult> StartMachine(Guid id)
+    {
+        var machine = await _context.Machine.FindAsync(id);
+        if (machine == null)
+        {
+            return NotFound();
+        }
+
+        machine.IsOnline = true;
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    [HttpPatch("{id}/stop")]
+    public async Task<IActionResult> StopMachine(Guid id)
+    {
+        var machine = await _context.Machine.FindAsync(id);
+        if (machine == null)
+        {
+            return NotFound();
+        }
+
+        machine.IsOnline = false;
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+    
+    [HttpPatch("{id}/updateData")]
+    public async Task<IActionResult> UpdateMachineData(Guid id, [FromBody] MachineDataDto dataUpdate)
+    {
+        try
+        {
+            var machine = await _context.Machine.FindAsync(id);
+            if (machine == null)
+            {
+                _logger.LogWarning($"Machine with ID {id} not found for data update.");
+                return NotFound($"Machine with ID {id} not found.");
+            }
+
+            // Update machine properties
+            machine.LastDataSent = DateTime.UtcNow;
+            machine.Temperature = dataUpdate.Temperature;
+            machine.Pressure = dataUpdate.Pressure;
+            machine.ProductionRate = dataUpdate.ProductionRate;
+
+            // Optionally update the machine status based on the data
+            machine.IsOnline = true; // Assuming receiving data means the machine is online
+
+            // Add any custom logic here
+            if (dataUpdate.Temperature > machine.MaxTemperature)
+            {
+                _logger.LogWarning($"Machine {id} temperature exceeds maximum: {dataUpdate.Temperature}");
+                machine.IsOnline = false;
+            }
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"Data updated for machine {id}");
+            return Ok(new { message = "Machine data updated successfully", machine = machine });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error updating data for machine {id}");
+            return StatusCode(500, "An error occurred while updating the machine data.");
+        }
     }
 
     // PUT: api/Machines/5
