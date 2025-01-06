@@ -21,6 +21,7 @@ public class Program
         builder.Services.AddScoped<IdentityUserAccessor>();
         builder.Services.AddScoped<IdentityRedirectManager>();
         builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
+        builder.Services.AddLogging();
 
         builder.Services.AddAuthentication(options =>
             {
