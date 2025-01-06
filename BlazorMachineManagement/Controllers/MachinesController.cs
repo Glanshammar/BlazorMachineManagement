@@ -101,10 +101,9 @@ public class MachinesController : ControllerBase
             machine.LastDataSent = DateTime.UtcNow;
             machine.Temperature = dataUpdate.Temperature;
             machine.ProductionRate = dataUpdate.ProductionRate;
-
-            // Optionally update the machine status based on the data
-            machine.IsOnline = true; // Assuming receiving data means the machine is online
-
+            machine.IsOnline = dataUpdate.IsOnline;
+            machine.Name = dataUpdate.Name;
+            
             // Add any custom logic here
             if (dataUpdate.Temperature > machine.MaxTemperature)
             {
