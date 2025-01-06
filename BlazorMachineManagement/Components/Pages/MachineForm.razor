@@ -1,0 +1,53 @@
+﻿@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<EditForm Model="@machine" OnValidSubmit="HandleSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="name">Name:</label>
+        <InputText id="name" @bind-Value="machine.Name" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label for="maxTemperature">Max Temperature:</label>
+        <InputNumber id="maxTemperature" @bind-Value="machine.MaxTemperature" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">@(IsNewMachine ? "Add" : "Update") Machine</button>
+    <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+</EditForm>
+
+@code {
+    [Parameter] public Machine machine { get; set; } = new Machine();
+    [Parameter] public bool IsNewMachine { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            if (IsNewMachine)
+            {
+                await Http.PostAsJsonAsync("api/Machines", machine);
+            }
+            else
+            {
+                await Http.PutAsJsonAsync($"api/Machines/{machine.Id}", machine);
+            }
+            await OnSave.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            // Handle error (e.g., show error message)
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+
+    private async Task Cancel()
+    {
+        await OnCancel.InvokeAsync();
+    }
+}
