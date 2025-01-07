@@ -1,5 +1,6 @@
 using BlazorMachineManagement.Components;
 using BlazorMachineManagement.Components.Account;
+using BlazorMachineManagement.Components.Pages;
 using BlazorMachineManagement.Data;
 using BlazorMachineManagement.Services;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -24,7 +25,10 @@ public class Program
         builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
         builder.Services.AddLogging();
         builder.Services.AddScoped<MachineService>();
-        builder.Services.AddHttpClient();
+        builder.Services.AddHttpClient("API", client =>
+        {
+            client.BaseAddress = new Uri("https://localhost:5173/");
+        });
 
         builder.Services.AddAuthentication(options =>
             {

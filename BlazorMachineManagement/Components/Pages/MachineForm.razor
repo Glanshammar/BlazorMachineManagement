@@ -1,5 +1,6 @@
 ﻿@inject HttpClient Http
 @inject NavigationManager NavigationManager
+@inject IHttpClientFactory HttpClientFactory
 
 <EditForm Model="@machine" OnValidSubmit="HandleSubmit">
     <DataAnnotationsValidator />
@@ -24,6 +25,13 @@
     [Parameter] public bool IsNewMachine { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
+    private HttpClient _httpClient;
+
+    protected override void OnInitialized()
+    {
+        _httpClient = HttpClientFactory.CreateClient("API");
+    }
+
 
     private async Task HandleSubmit()
     {
@@ -31,17 +39,16 @@
         {
             if (IsNewMachine)
             {
-                await Http.PostAsJsonAsync("api/Machines", machine);
+                await _httpClient.PostAsJsonAsync("api/Machines", machine);
             }
             else
             {
-                await Http.PutAsJsonAsync($"api/Machines/{machine.Id}", machine);
+                await _httpClient.PutAsJsonAsync($"api/Machines/{machine.Id}", machine);
             }
             await OnSave.InvokeAsync();
         }
         catch (Exception ex)
         {
-            // Handle error (e.g., show error message)
             Console.WriteLine($"Error: {ex.Message}");
         }
     }

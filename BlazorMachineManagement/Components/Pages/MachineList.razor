@@ -1,64 +1,77 @@
-﻿@page "/machines"
-@inject HttpClient Http
-@inject ILogger<MachineList> Logger
+﻿@page "/machine-management"
+@using BlazorMachineManagement.Models
+@using BlazorMachineManagement.DTO
+@inject HttpClient HttpClient
+@inject IHttpClientFactory HttpClientFactory
 
-<h1>Machine Management</h1>
+<h3>Machine Management</h3>
 
-<button class="btn btn-success mb-3" @onclick="() => ShowMachineForm(null)">Add New Machine</button>
+<h4>Machine List</h4>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Status</th>
+            <th>Temperature</th>
+            <th>Production Rate</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var machine in machines)
+        {
+            <tr>
+                <td>@machine.Name</td>
+                <td>@(machine.IsOnline ? "Online" : "Offline")</td>
+                <td>@machine.Temperature</td>
+                <td>@machine.ProductionRate</td>
+                <td>
+                    <button class="btn btn-primary" @onclick="() => EditMachine(machine)">Edit</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
 
-@if (showForm)
-{
-        <MachineForm 
-            machine="@currentMachine" 
-            IsNewMachine="@(currentMachine.Id == Guid.Empty)"
-            OnCancel="CancelForm"
-            OnSave="SaveForm" />
-}
+<h4>@(editingMachine == null ? "Add New Machine" : "Edit Machine")</h4>
+<EditForm Model="@machineData" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
 
-@if (machines == null)
-{
-        <p><em>No machines avaible.</em></p>
-}
-else
-{
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Status</th>
-                    <th>Temperature</th>
-                    <th>Production Rate</th>
-                    <th>Max Temperature</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-            @foreach (var machine in machines)
-            {
-                        <tr>
-                            <td>@machine.Name</td>
-                            <td>@(machine.IsOnline ? "Online" : "Offline")</td>
-                            <td>@machine.Temperature</td>
-                            <td>@machine.ProductionRate</td>
-                            <td>@machine.MaxTemperature</td>
-                            <td>
-                                <button class="btn btn-primary" @onclick="() => ToggleMachineStatus(machine)">
-                            @(machine.IsOnline ? "Stop" : "Start")
-                                </button>
-                                <button class="btn btn-info" @onclick="() => UpdateMachineData(machine)">Update Data</button>
-                                <button class="btn btn-warning" @onclick="() => ShowMachineForm(machine)">Edit</button>
-                                <button class="btn btn-danger" @onclick="() => DeleteMachine(machine)">Delete</button>
-                            </td>
-                        </tr>
-            }
-            </tbody>
-        </table>
-}
+    <div class="form-group">
+        <label for="name">Name:</label>
+        <InputText id="name" @bind-Value="machineData.Name" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label for="isOnline">Status:</label>
+        <InputSelect id="isOnline" @bind-Value="machineData.IsOnline" class="form-control">
+            <option value="true">Online</option>
+            <option value="false">Offline</option>
+        </InputSelect>
+    </div>
+
+    <div class="form-group">
+        <label for="temperature">Temperature:</label>
+        <InputNumber id="temperature" @bind-Value="machineData.Temperature" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label for="productionRate">Production Rate:</label>
+        <InputNumber id="productionRate" @bind-Value="machineData.ProductionRate" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">@(editingMachine == null ? "Add Machine" : "Update Machine")</button>
+    @if (editingMachine != null)
+    {
+        <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+    }
+</EditForm>
 
 @code {
-    private List<Machine> machines;
-    private bool showForm = false;
-    private Machine currentMachine = new Machine();
+    private List<Machine> machines = new List<Machine>();
+    private MachineDataDto machineData = new MachineDataDto();
+    private Machine editingMachine;
 
     protected override async Task OnInitializedAsync()
     {
@@ -67,83 +80,40 @@ else
 
     private async Task LoadMachines()
     {
-        try
+        var client = HttpClientFactory.CreateClient("API");
+        machines = await client.GetFromJsonAsync<List<Machine>>("api/machines") ?? new List<Machine>();
+    }
+    
+    private void EditMachine(Machine machine)
+    {
+        editingMachine = machine;
+        machineData = new MachineDataDto
         {
-            machines = await Http.GetFromJsonAsync<List<Machine>>("api/Machines");
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error fetching machines");
-        }
+            Name = machine.Name,
+            IsOnline = machine.IsOnline,
+            Temperature = machine.Temperature,
+            ProductionRate = machine.ProductionRate
+        };
     }
 
-    private void ShowMachineForm(Machine machine)
+    private async Task HandleValidSubmit()
     {
-        currentMachine = machine ?? new Machine();
-        showForm = true;
-    }
+        if (editingMachine == null)
+        {
+            await HttpClient.PostAsJsonAsync("api/machines", machineData);
+        }
+        else
+        {
+            await HttpClient.PutAsJsonAsync($"api/machines/{editingMachine.Id}", machineData);
+        }
 
-    private async Task CancelForm()
-    {
-        showForm = false;
         await LoadMachines();
+        CancelEdit();
     }
 
-    private async Task SaveForm()
+    private void CancelEdit()
     {
-        showForm = false;
-        await LoadMachines();
-    }
-
-    private async Task ToggleMachineStatus(Machine machine)
-    {
-        try
-        {
-            var endpoint = machine.IsOnline ? $"api/Machines/{machine.Id}/stop" : $"api/Machines/{machine.Id}/start";
-            var response = await Http.PatchAsync(endpoint, null);
-            response.EnsureSuccessStatusCode();
-            machine.IsOnline = !machine.IsOnline;
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, $"Error toggling status for machine {machine.Id}");
-        }
-    }
-
-    private async Task UpdateMachineData(Machine machine)
-    {
-        var random = new Random();
-        var data = new MachineDataDto
-            {
-                Temperature = random.Next(0, 100),
-                ProductionRate = random.Next(0, 1000),
-                IsOnline = machine.IsOnline,
-                Name = machine.Name
-            };
-
-        try
-        {
-            var response = await Http.PatchAsJsonAsync($"api/Machines/{machine.Id}/updateData", data);
-            response.EnsureSuccessStatusCode();
-            await LoadMachines();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, $"Error updating data for machine {machine.Id}");
-        }
-    }
-
-    private async Task DeleteMachine(Machine machine)
-    {
-        try
-        {
-            var response = await Http.DeleteAsync($"api/Machines/{machine.Id}");
-            response.EnsureSuccessStatusCode();
-            await LoadMachines();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, $"Error deleting machine {machine.Id}");
-        }
+        editingMachine = null;
+        machineData = new MachineDataDto();
     }
 }
