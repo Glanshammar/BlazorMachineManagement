@@ -1,8 +1,8 @@
-﻿@inject HttpClient Http
+﻿@using BlazorMachineManagement.Services
+@inject MachineService MachineService
 @inject NavigationManager NavigationManager
-@inject IHttpClientFactory HttpClientFactory
 
-<EditForm Model="@machine" OnValidSubmit="HandleSubmit">
+<EditForm Model="@machine" OnValidSubmit="HandleSubmit" FormName="machineDetailsForm">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
@@ -25,27 +25,43 @@
     [Parameter] public bool IsNewMachine { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
-    private HttpClient _httpClient;
-
-    protected override void OnInitialized()
-    {
-        _httpClient = HttpClientFactory.CreateClient("API");
-    }
-
 
     private async Task HandleSubmit()
     {
         try
         {
+            bool success;
             if (IsNewMachine)
             {
-                await _httpClient.PostAsJsonAsync("api/Machines", machine);
+                var machineData = new MachineDataDto
+                {
+                    Name = machine.Name,
+                    IsOnline = false,
+                    Temperature = 0,
+                    ProductionRate = 0
+                };
+                success = await MachineService.CreateMachineAsync(machineData);
             }
             else
             {
-                await _httpClient.PutAsJsonAsync($"api/Machines/{machine.Id}", machine);
+                var machineData = new MachineDataDto
+                {
+                    Name = machine.Name,
+                    IsOnline = machine.IsOnline,
+                    Temperature = machine.Temperature,
+                    ProductionRate = machine.ProductionRate
+                };
+                success = await MachineService.UpdateMachineAsync(machine.Id, machineData);
             }
-            await OnSave.InvokeAsync();
+
+            if (success)
+            {
+                await OnSave.InvokeAsync();
+            }
+            else
+            {
+                Console.WriteLine("Failed to save machine data");
+            }
         }
         catch (Exception ex)
         {

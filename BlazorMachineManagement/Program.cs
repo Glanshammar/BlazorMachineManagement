@@ -24,10 +24,15 @@ public class Program
         builder.Services.AddScoped<IdentityRedirectManager>();
         builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
         builder.Services.AddLogging();
+        builder.Services.AddControllers();
         builder.Services.AddScoped<MachineService>();
-        builder.Services.AddHttpClient("API", client =>
+        
+        builder.Services.AddCors(options =>
         {
-            client.BaseAddress = new Uri("https://localhost:5173/");
+            options.AddPolicy("AllowBlazorOrigin",
+                builder => builder.WithOrigins("https://localhost:5173")
+                    .AllowAnyMethod()
+                    .AllowAnyHeader());
         });
 
         builder.Services.AddAuthentication(options =>
@@ -64,7 +69,7 @@ public class Program
         }
 
         app.UseHttpsRedirection();
-
+        app.UseCors("AllowBlazorOrigin");
         app.UseStaticFiles();
         app.UseAntiforgery();
 
